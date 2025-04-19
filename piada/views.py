@@ -1,26 +1,42 @@
 from django.shortcuts import render
+from kafka import KafkaProducer
 from datetime import datetime
+import json as json_lib
 import requests
 
 
 def home_view(request):
-    # URL da API do Chuck Norris
     api_url = 'http://127.0.0.1:8001/api'
 
-    # Fazendo requisição [GET]
-    response = requests.get(api_url)
+    try:
+        response = requests.get(api_url)
 
-    # Verificando status da response
-    if response.status_code == 200:
-        json = response.json()
-        piada = json['joke']
-        print('Piada: ', piada)
+        if response.status_code == 200:
+            data = response.json()
+            piada = data.get('joke', 'Sem piada no momento.')
 
-        return render(request, 'home.html', {'piada': piada})
-    
-    else:
-        # Se a requisição falhar, retorna uma mensagem de erro
-        return render(request, 'home.html', {'error': 'Falha ao carregar as piadas'})
+            print('Piada recebida:', piada)
+
+            # Envia para o Kafka
+            try:
+                producer = KafkaProducer(
+                    bootstrap_servers=['localhost:9092'],
+                    value_serializer=lambda v: json_lib.dumps(v).encode('utf-8')
+                )
+                producer.send('python_kafka_kevin', {'piada': piada})
+                producer.flush()
+                print("Piada enviada para o Kafka.")
+            except Exception as e:
+                print(f"Erro ao enviar para Kafka: {e}")
+
+            return render(request, 'home.html', {'piada': piada})
+
+        else:
+            return render(request, 'home.html', {'error': 'Falha ao carregar a piada.'})
+
+    except Exception as e:
+        print(f"Erro na requisição à API: {e}")
+        return render(request, 'home.html', {'error': 'Erro de conexão com a API.'})
 
 # Função para converter formato de data
 def formatar_data(data_str):
@@ -31,43 +47,48 @@ def formatar_data(data_str):
 
 # Views do Histórico
 def piadas_historico_view(request):
-    # URL da API históricos das piadas
     api_historico_url = 'http://127.0.0.1:8002/api/historico'
 
-    # Obtendo os parâmetros de paginação da query string
-    pagina = request.GET.get('paginacao_pagina', 0)
-    limite = request.GET.get('paginacao_limite', 10)
+    # Pegando os valores da URL (começando de 1 por padrão)
+    pagina_param = request.GET.get('paginacao_pagina', '1')
+    limite = request.GET.get('paginacao_limite', '10')
 
-    # Verifica se o limite é maior que 0
-    if str(limite).isdigit() and int(limite) <= 0:
-        limite = 10  # Definir limite padrão se for menor ou igual a 0
+    # Validando o valor da página
+    if pagina_param.isdigit():
+        pagina = int(pagina_param)
+        if pagina < 1:
+            pagina = 1
+    else:
+        pagina = 1
 
-    # Fazendo requisição [GET] para a API de histórico das piadas
+    # Validando limite
+    if limite.isdigit() and int(limite) > 0:
+        limite = int(limite)
+    else:
+        limite = 10
+
+    # Enviando para a API com índice baseado em zero
     response = requests.get(
         api_historico_url,
         params={
-            'paginacao_pagina': pagina,
+            'paginacao_pagina': pagina - 1,  # <-- ajustado aqui!
             'paginacao_limite': limite
         }
     )
 
-    # Verificando status da response
     if response.status_code == 200:
         dados_response = response.json()
 
         total_piadas = dados_response['total']
         paginas = dados_response['paginas']
-        pagina_atual = dados_response['pagina']
-        limite = dados_response['limite']
-        piadas = dados_response['jokes']
+        pagina_atual = dados_response['pagina'] + 1  # <-- ajustado aqui!
 
-        # Formatando a data de cada piada
         piadas = dados_response['jokes']
         for piada in piadas:
             piada['data_get'] = formatar_data(piada['data_get'])
 
-        # Cria uma lista de páginas para navegação
-        lista_paginas = range(paginas)
+        # Gera lista de páginas (baseada em 1)
+        lista_paginas = range(1, paginas + 1)
 
         return render(request, 'historico.html', {
             'total_piadas': total_piadas,
@@ -77,6 +98,6 @@ def piadas_historico_view(request):
             'piadas': piadas,
             'lista_paginas': lista_paginas
         })
+
     else:
-        # Se a requisição falhar, retorna uma mensagem de erro
         return render(request, 'historico.html', {'error': 'Falha ao carregar o histórico das piadas'})
