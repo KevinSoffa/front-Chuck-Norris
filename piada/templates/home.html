@@ -5,17 +5,47 @@
 {% block title %}Minhas Piadas{% endblock %}
 
 {% block content %}
-    <img src="{% static 'img/logo.png' %}" alt="logo" class="w-120 h-70 mx-auto my-8">
-    <h1 class="text-4xl mb-4">Piadas</h1>
-    <div class="bg-gray-300 bg-opacity-50 rounded p-8 text-center mx-auto max-w-lg">
+    <style>
+        @keyframes float {
+        0% {
+            transform: translatey(0px);
+        }
+        50% {
+            transform: translatey(-25px);
+        }
+        100% {
+            transform: translatey(0px);
+        }
+        }
+
+        .floating {
+        animation: float 3s ease-in-out infinite;
+        }
+    </style>
+
+    <img src="{% static 'img/logo.png' %}" alt="logo" class="w-120 h-70 mx-auto my-8 floating">
+    <div class="bg-gray-300 bg-opacity-50 rounded p-8 text-center mx-auto max-w-xl">
         {% if piada %}
-            <h2 class="text-white">{{ piada }}</h2>
+          <h2 class="text-white" id="piada-container"></h2>
+          <script>
+            const piadaText = "{{ piada }}";
+            const piadaContainer = document.getElementById('piada-container');
+            let index = 0;
+      
+            function typeWriter() {
+              if (index < piadaText.length) {
+                piadaContainer.innerHTML += piadaText.charAt(index);
+                index++;
+                setTimeout(typeWriter, 50);
+              }
+            }
+      
+            window.onload = typeWriter;
+          </script>
         {% elif error %}
-            <p>{{ error }}</p>
-        {% else %}
-            <p>Nenhuma piada disponível no momento.</p>
+          <p class="text-danger">{{ error }}</p>
         {% endif %}
-    </div>
+      </div>
     <br>
     <a href="{% url 'piada:piada' %}" class="my-4">
         <button class="btn btn-info"><strong>Me conte outra</strong></button>   
