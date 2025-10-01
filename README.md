@@ -18,6 +18,8 @@
 
 Este projeto é uma arquitetura baseada em microsserviços desenvolvida com foco em escalabilidade e integração de tecnologias modernas. O sistema tem como objetivo gerar, exibir e armazenar piadas do Chuck Norris utilizando diversas ferramentas e serviços independentes, que se comunicam entre si.
 
+<img src="https://raw.githubusercontent.com/KevinSoffa/front-Chuck-Norris/refs/heads/master/static/img/Diagrama%20piadas.drawio.png" height="400" alt="pagina home"/>
+
 ## Tecnologias 🛠️
 <div align="left">
     <img src="https://skillicons.dev/icons?i=py" height="40" alt="python logo"/>
