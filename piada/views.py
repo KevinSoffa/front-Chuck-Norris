@@ -6,7 +6,7 @@ import requests
 
 
 def home_view(request):
-    api_url = 'http://127.0.0.1:8001/api'
+    api_url = 'http://127.0.0.1:8000/api'
 
     try:
         response = requests.get(api_url)
@@ -47,7 +47,7 @@ def formatar_data(data_str):
 
 # Views do Histórico
 def piadas_historico_view(request):
-    api_historico_url = 'http://127.0.0.1:8002/api/historico'
+    api_historico_url = 'http://127.0.0.1:8001/api/historico'
 
     # Pegando os valores da URL (começando de 1 por padrão)
     pagina_param = request.GET.get('paginacao_pagina', '1')
